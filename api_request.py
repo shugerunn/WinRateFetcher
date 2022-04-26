@@ -36,7 +36,7 @@ def getSummonerId(summonerName: str, region):
 
 
 def getMatchList(summonerId: str, queue: int, routing):
-    params = f'?queue={queue}&count=50'
+    params = f'?queue={queue}&count=5'
     summonerMatchlistUrl = f'https://{routing}.api.riotgames.com/lol/match/v5/matches/by-puuid/{summonerId}/ids{params}'
     res = requests.get(summonerMatchlistUrl, headers=headers).json()
     return res
@@ -78,28 +78,31 @@ def displayWinrates(summonerId, matchList: list, routing):
                 champion_winrates[champion] = [0, 1, 0]
         champion_winrates[champion][2] += 1
 
-    # Sort champions in descending order of games
-    champion_winrates = dict(
-        sorted(champion_winrates.items(), reverse=True, key=lambda x: x[1][2]))
-    champion_list = []
-    champion_winrates_list = []
 
     # Overall wins and losses
     print(wins, 'wins', losses, 'losses')
 
     # Overall winrate to two decimal places
     print('%.2f' % (winrate(wins, losses)) + "%")
-    for champion in champion_winrates:
-        # Prints champion winrates and checks for plural games
-        percentage = '%.2f' % (winrate(champion_winrates[champion], losses))
-        games = champion_winrates[champion][2]
 
-        champion_list.append(champion)
-        champion_winrates_list.append(float(percentage))
 
-        if games == 1:
-            print(champion, percentage + '%', games, 'game')
-        else:
-            print(champion, percentage + '%', games, 'games')
+def csKdaGetter(summonerId, matchList: list, routing):
+    # Parse through matchlist
 
-    return champion_list, champion_winrates_list
+    kda = 0
+    cs = 0
+
+    for matchId in matchList:
+
+        # Access match data
+        matchUrl = f'https://{routing}.api.riotgames.com/lol/match/v5/matches/{matchId}'
+        matchInfo = requests.get(matchUrl, headers=headers).json()["info"]
+
+        for player in matchInfo["participants"]:
+            if player["puuid"] == summonerId:
+                challenges = player['challenges']
+                indivKda = challenges['kda']
+                indivCs = player["totalMinionsKilled"]
+                kda = indivKda+kda
+                cs = indivCs+cs
+    print('Your CS: ' + str(cs/5) + '\nYour KDA: ' + str(kda/5))
